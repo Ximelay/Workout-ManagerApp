@@ -11,7 +11,7 @@ import java.util.ArrayList;
 public class WorkoutDatabaseHelper extends SQLiteOpenHelper {
 
     private static final String DATABASE_NAME = "workouts.db";
-    private static final int DATABASE_VERSION = 2;
+    private static final int DATABASE_VERSION = 3;
 
     private static final String TABLE_WORKOUTS = "workouts";
     private static final String COLUMN_ID = "id";
@@ -62,5 +62,12 @@ public class WorkoutDatabaseHelper extends SQLiteOpenHelper {
         }
 
         return workouts;
+    }
+
+    public boolean deleteWorkout(int id) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        int result = db.delete(TABLE_WORKOUTS, "id=?", new String[]{String.valueOf(id)});
+        db.close();
+        return result > 0; // Если удалена хотя бы одна строка, возвращаем true
     }
 }
