@@ -2,20 +2,24 @@ package com.example.workoutmanager;
 
 import android.content.Context;
 import android.database.Cursor;
+import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class JSONExporter {
 
-    public static File exportWorkoutsToJSON(Context context, ArrayList<Workout> workouts) {
-        JSONArray jsonArray = new JSONArray();
+    private static final String TAG = "JSONExporter";
 
+    public static File exportWorkoutsToJSON(Context context, ArrayList<Workout> workouts) {
         try {
+            // Преобразуем список тренировок в JSON
+            JSONArray jsonArray = new JSONArray();
             for (Workout workout : workouts) {
                 JSONObject jsonObject = new JSONObject();
                 jsonObject.put("id", workout.getId());
@@ -24,17 +28,41 @@ public class JSONExporter {
                 jsonArray.put(jsonObject);
             }
 
-            File file = new File(context.getExternalFilesDir(null), "workouts.json");
-            FileWriter writer = new FileWriter(file);
-            writer.write(jsonArray.toString());
-            writer.close();
+            String jsonString = jsonArray.toString(4); // Преобразуем в строку с отступами
+            Log.d(TAG, "Экспортированные данные: " + jsonString);
 
-            return file; // Возвращаем файл для подтверждения или дальнейшей обработки
+            // Сохраняем JSON в файл
+            File jsonFile = saveJsonToFile(context, jsonString);
+            return jsonFile;
 
         } catch (Exception e) {
             e.printStackTrace();
+            Log.e(TAG, "Ошибка при экспорте в JSON", e);
+            return null;
         }
+    }
 
-        return null; // Возвращаем null, если произошла ошибка
+    private static File saveJsonToFile(Context context, String jsonString) {
+        try {
+            // Создаем директорию "exports" внутри директории приложения
+            File dir = new File(context.getExternalFilesDir(null), "exports");
+            if (!dir.exists() && !dir.mkdirs()) {
+                Log.e(TAG, "Ошибка создания директории: " + dir.getAbsolutePath());
+                return null;
+            }
+
+            // Создаем файл workouts.json
+            File jsonFile = new File(dir, "workouts.json");
+            try (FileWriter writer = new FileWriter(jsonFile)) {
+                writer.write(jsonString);
+            }
+
+            Log.d(TAG, "JSON сохранен в файл: " + jsonFile.getAbsolutePath());
+            return jsonFile;
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Ошибка при сохранении JSON в файл", e);
+            return null;
+        }
     }
 }
