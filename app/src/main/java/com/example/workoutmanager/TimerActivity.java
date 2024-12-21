@@ -1,5 +1,6 @@
 package com.example.workoutmanager;
 
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -19,11 +20,15 @@ import androidx.core.view.WindowInsetsCompat;
 public class TimerActivity extends AppCompatActivity {
 
     private String workoutName;
+    private int workoutId; // ID тренировки
+    private WorkoutDatabaseHelper dbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_timer);
+
+        dbHelper = new WorkoutDatabaseHelper(this);
 
         // Запрос разрешения для уведомлений (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) { // TIRAMISU = API 33
@@ -35,6 +40,7 @@ public class TimerActivity extends AppCompatActivity {
 
         workoutName = getIntent().getStringExtra("workout_name");
         int workoutDuration = getIntent().getIntExtra("workout_duration", 0); // Длительность в минутах
+        workoutId = getIntent().getIntExtra("workout_id", -1); // Получаем ID тренировки
 
         TextView workoutTitle = findViewById(R.id.workout_title);
         workoutTitle.setText(workoutName);
@@ -47,6 +53,9 @@ public class TimerActivity extends AppCompatActivity {
             }
             startTimer(workoutName, workoutDuration);
         });
+
+        Button deleteWorkoutButton = findViewById(R.id.delete_workout_button);
+        deleteWorkoutButton.setOnClickListener(v -> confirmDeletion());
     }
 
     private void startTimer(String workoutName, int duration) {
@@ -54,5 +63,27 @@ public class TimerActivity extends AppCompatActivity {
         intent.putExtra("workout_name", workoutName);
         intent.putExtra("workout_duration", duration * 60 * 1000); // Переводим минуты в миллисекунды
         startService(intent);
+    }
+
+    private void confirmDeletion() {
+        // Диалог подтверждения удаления
+        new AlertDialog.Builder(this)
+                .setTitle("Удалить тренировку")
+                .setMessage("Вы уверены, что хотите удалить эту тренировку?")
+                .setPositiveButton("Да", (dialog, which) -> deleteWorkout())
+                .setNegativeButton("Отмена", null)
+                .show();
+    }
+
+    private void deleteWorkout() {
+        if (workoutId != -1) {
+            boolean result = dbHelper.deleteWorkout(workoutId);
+            if (result) {
+                Toast.makeText(this, "Тренировка удалена", Toast.LENGTH_SHORT).show();
+                finish(); // Закрываем текущую активность
+            } else {
+                Toast.makeText(this, "Ошибка при удалении тренировки", Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 }
